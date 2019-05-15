@@ -28,8 +28,10 @@ function agent_inbounds(pomdp::DroneSurveillancePOMDP, s::DSPos)
     if !(0 < s[1] <= pomdp.size[1]) || !(0 < s[2] <= pomdp.size[2])
         return false
     end
-    if s == pomdp.region_A || s == pomdp.region_B
-        return false 
+    if pomdp.agent_policy == :restricted 
+        if s == pomdp.region_A || s == pomdp.region_B
+            return false 
+        end
     end
     return true
 end
