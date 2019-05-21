@@ -39,18 +39,30 @@ function POMDPs.initialstate_distribution(pomdp::DroneSurveillancePOMDP)
     nx, ny = pomdp.size
     fov_x, fov_y = pomdp.fov
     states = DSState[]
-    xspace = fov_x:nx
-    yspace = fov_y:ny
-    for x in fov_x:nx
-        for y in 1:ny
-            agent = DSPos(x, y)
-            push!(states, DSState(quad, agent))
+    if pomdp.agent_policy == :restricted 
+        xspace = fov_x:nx
+        yspace = fov_y:ny
+        for x in fov_x:nx
+            for y in 1:ny
+                agent = DSPos(x, y)
+                push!(states, DSState(quad, agent))
+            end
         end
-    end
-    for y in fov_y:ny
-        for x in 1:fov_x-1
-            agent = DSPos(x, y)
-            push!(states, DSState(quad, agent))
+        for y in fov_y:ny
+            for x in 1:fov_x-1
+                agent = DSPos(x, y)
+                push!(states, DSState(quad, agent))
+            end
+        end
+
+    else 
+        for x in 1:nx 
+            for y in 1:ny
+                if (x,y) != (1,1)
+                    agent = DSPos(x, y)
+                    push!(states, DSState(quad, agent))
+                end
+            end
         end
     end
     probs = normalize!(ones(length(states)), 1)
