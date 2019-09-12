@@ -30,6 +30,8 @@ function Base.iterate(pomdp::DroneSurveillancePOMDP, i::Int64 = 1)
     return (s, i+1)
 end
 
+Base.length(pomdp::DroneSurveillancePOMDP) = n_states(pomdp)
+
 function POMDPs.initialstate(pomdp::DroneSurveillancePOMDP, rng::AbstractRNG)
     rand(rng, initialstate_distribution(pomdp))
 end

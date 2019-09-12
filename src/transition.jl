@@ -10,9 +10,11 @@ function POMDPs.transition(pomdp::DroneSurveillancePOMDP, s::DSState, a::Int64)
     probs = @MVector(zeros(n_actions(pomdp)))
     for (i, act) in enumerate(ACTION_DIRS)
         new_agent = s.agent + act
-        new_states[i] = DSState(new_quad, new_agent)
         if agent_inbounds(pomdp, new_agent)
+            new_states[i] = DSState(new_quad, new_agent)
             probs[i] += 1.0
+        else
+            new_states[i] = pomdp.terminal_state
         end
     end
     normalize!(probs, 1)

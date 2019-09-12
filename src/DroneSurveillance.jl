@@ -69,17 +69,15 @@ end
 POMDPs.isterminal(pomdp::DroneSurveillancePOMDP, s::DSState) = s == pomdp.terminal_state 
 POMDPs.discount(pomdp::DroneSurveillancePOMDP) = pomdp.discount_factor
 
-function POMDPs.reward(pomdp::DroneSurveillancePOMDP, s::DSState, a::Int64, sp::DSState)
-    if !isterminal(pomdp, s) && sp.quad == sp.agent 
+function POMDPs.reward(pomdp::DroneSurveillancePOMDP, s::DSState, a::Int64)
+    if s.quad == s.agent 
         return -1.0
     end
-    if sp.quad == pomdp.region_B
+    if s.quad == pomdp.region_B
         return 1.0
     end
     return 0.0
 end
-
-POMDPs.reward(pomdp::DroneSurveillancePOMDP, s::DSState, a::Int64) = reward(pomdp, s, a, s)
 
 include("states.jl")
 include("actions.jl")
