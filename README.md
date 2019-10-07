@@ -1,8 +1,8 @@
 # DroneSurveillance.jl
 
-[![Build Status](https://travis-ci.org/MaximeBouton/DroneSurveillance.jl.svg?branch=master)](https://travis-ci.org/MaximeBouton/DroneSurveillance.jl)
-[![Coverage Status](https://coveralls.io/repos/github/MaximeBouton/DroneSurveillance.jl/badge.svg?branch=master)](https://coveralls.io/github/MaximeBouton/DroneSurveillance.jl?branch=master)
-[![codecov](https://codecov.io/gh/maximebouton/DroneSurveillance.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/maximebouton/DroneSurveillance.jl)
+[![Build Status](https://travis-ci.org/JuliaPOMDP/DroneSurveillance.jl.svg?branch=master)](https://travis-ci.org/JuliaPOMDP/DroneSurveillance.jl)
+[![Coverage Status](https://coveralls.io/repos/github/JuliaPOMDP/DroneSurveillance.jl/badge.svg?branch=master)](https://coveralls.io/github/JuliaPOMDP/DroneSurveillance.jl?branch=master)
+[![codecov](https://codecov.io/gh/juliapomdp/DroneSurveillance.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/juliapomdp/DroneSurveillance.jl)
 
 
 Implementation of a drone surveillance problem<sup>1</sup> with the [POMDPs.jl](https://github.com/JuliaPOMDP/POMDPs.jl).
@@ -16,7 +16,7 @@ Temporal logic motion planning using POMDPs with parity objectives: case study p
 
 ```julia
 using Pkg
-Pkg.add(PackageSpec(url="https://github.com/MaximeBouton/DroneSurveillance.jl"))
+Pkg.add(PackageSpec(url="https://github.com/JuliaPOMDP/DroneSurveillance.jl"))
 ```
 
 

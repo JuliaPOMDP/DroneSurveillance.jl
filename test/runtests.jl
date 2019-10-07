@@ -63,8 +63,27 @@ end
 
 
 @testset "observation" begin 
-    rng = MersenneTwister(1)
-    pomdp = DroneSurveillancePOMDP()
+    rng = MersenneTwister(3)
+    # quad cam
+    pomdp = DroneSurveillancePOMDP(camera=QuadCam())
+    obs = observations(pomdp)
+    @test obs == ordered_observations(pomdp)
+    s0 = initialstate(pomdp, rng)
+    od = observation(pomdp, 1, s0)
+    o = rand(rng, od)
+    @test o == 6 # agent should be out
+    @inferred observation(pomdp, 6, s0)
+    @inferred observation(pomdp, 1, s0)
+    s = DSState((2,2), (3,2))
+    o = rand(rng, observation(pomdp, 6, s))
+    @test o == 4 # east
+    s = DSState((2,2), (3,3))
+    o = rand(rng, observation(pomdp, 6, s))
+    @show observation(pomdp, 6, s)
+    @test o == 3 # north east    
+    obs_prob_consistency_check(pomdp)
+    # perfect cam 
+    pomdp = DroneSurveillancePOMDP(camera=PerfectCam())
     obs = observations(pomdp)
     @test obs == ordered_observations(pomdp)
     s0 = initialstate(pomdp, rng)
