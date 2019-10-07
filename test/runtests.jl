@@ -20,12 +20,12 @@ end
     pomdp = DroneSurveillancePOMDP()
     state_iterator =  states(pomdp)
     ss = ordered_states(pomdp)
-    @test length(ss) == n_states(pomdp)
+    @test length(ss) == length(pomdp)
     @test test_state_indexing(pomdp, ss)
     pomdp = DroneSurveillancePOMDP(size=(7, 10))
     state_iterator =  states(pomdp)
     ss = ordered_states(pomdp)
-    @test length(ss) == n_states(pomdp)
+    @test length(ss) == length(pomdp)
     @test test_state_indexing(pomdp, ss)
 end
 
@@ -33,7 +33,7 @@ end
     pomdp = DroneSurveillancePOMDP()
     acts = actions(pomdp)
     @test acts == ordered_actions(pomdp)
-    @test length(acts) == n_actions(pomdp)
+    @test length(acts) == length(actions(pomdp))
     @test length(acts) == length(DroneSurveillance.ACTION_DIRS)
 end
 

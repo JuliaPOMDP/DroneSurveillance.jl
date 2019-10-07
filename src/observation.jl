@@ -24,7 +24,6 @@ const OBS_DIRS = SVector(DSPos(0,1),
 
 
 POMDPs.observations(pomdp::DroneSurveillancePOMDP) = 1:N_OBS
-POMDPs.n_observations(pomdp::DroneSurveillancePOMDP) = N_OBS
 POMDPs.obsindex(pomdp::DroneSurveillancePOMDP, o::Int64) = o
 
 function POMDPs.observation(pomdp::DroneSurveillancePOMDP, a::Int64, s::DSState)

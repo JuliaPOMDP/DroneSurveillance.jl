@@ -6,8 +6,8 @@ function POMDPs.transition(pomdp::DroneSurveillancePOMDP, s::DSState, a::Int64)
     end
 
     # move agent 
-    new_states = MVector{n_actions(pomdp), DSState}(undef)
-    probs = @MVector(zeros(n_actions(pomdp)))
+    new_states = MVector{N_ACTIONS, DSState}(undef)
+    probs = @MVector(zeros(N_ACTIONS))
     for (i, act) in enumerate(ACTION_DIRS)
         new_agent = s.agent + act
         new_states[i] = DSState(new_quad, new_agent)
