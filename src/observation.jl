@@ -26,8 +26,6 @@ const N_OBS_QUAD = 6
 
 POMDPs.observations(pomdp::DroneSurveillancePOMDP{QuadCam}) = 1:N_OBS_QUAD
 POMDPs.observations(pomdp::DroneSurveillancePOMDP{PerfectCam}) = 1:N_OBS_PERFECT
-POMDPs.n_observations(pomdp::DroneSurveillancePOMDP{QuadCam}) = N_OBS_QUAD
-POMDPs.n_observations(pomdp::DroneSurveillancePOMDP{PerfectCam}) = N_OBS_PERFECT
 POMDPs.obsindex(pomdp::DroneSurveillancePOMDP, o::Int64) = o
 
 function POMDPs.observation(pomdp::DroneSurveillancePOMDP{QuadCam}, a::Int64, s::DSState)

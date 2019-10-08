@@ -1,15 +1,13 @@
-POMDPs.n_states(pomdp::DroneSurveillancePOMDP) = (pomdp.size[1] * pomdp.size[2])^2 + 1
-
 function POMDPs.stateindex(pomdp::DroneSurveillancePOMDP, s::DSState)
     if isterminal(pomdp, s)
-        return n_states(pomdp)
+        return length(pomdp)
     end
     nx, ny = pomdp.size 
     LinearIndices((nx, ny, nx, ny))[s.quad[1], s.quad[2], s.agent[1], s.agent[2]]
 end
 
 function state_from_index(pomdp::DroneSurveillancePOMDP, si::Int64)
-    if si == n_states(pomdp)
+    if si == length(pomdp)
         return pomdp.terminal_state
     end
     nx, ny = pomdp.size 
@@ -21,16 +19,15 @@ end
 # we define an iterator over it
 
 POMDPs.states(pomdp::DroneSurveillancePOMDP) = pomdp
+Base.length(pomdp::DroneSurveillancePOMDP) = (pomdp.size[1] * pomdp.size[2])^2 + 1
 
 function Base.iterate(pomdp::DroneSurveillancePOMDP, i::Int64 = 1)
-    if i > n_states(pomdp)
+    if i > length(pomdp)
         return nothing
     end
     s = state_from_index(pomdp, i)
     return (s, i+1)
 end
-
-Base.length(pomdp::DroneSurveillancePOMDP) = n_states(pomdp)
 
 function POMDPs.initialstate(pomdp::DroneSurveillancePOMDP, rng::AbstractRNG)
     rand(rng, initialstate_distribution(pomdp))
