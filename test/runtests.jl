@@ -40,9 +40,9 @@ end
 @testset "transition" begin
     rng = MersenneTwister(1)
     pomdp = DroneSurveillancePOMDP()
-    b0 = initialstate_distribution(pomdp)
+    b0 = initialstate(pomdp)
     @test sum(b0.probs) ≈ 1.0
-    s0 = initialstate(pomdp, rng)
+    s0 = rand(rng, initialstate(pomdp))
     @test s0.quad == DSPos(1, 1)
     @test sum(s0.agent - s0.quad) >= pomdp.fov[1]
     d = transition(pomdp, s0, 1) # move up
@@ -58,7 +58,7 @@ end
     @test sp == pomdp.terminal_state
     # @inferred transition(pomdp, s0, 3) # not type stable, Union{Deterministic, SparseCat}
     @inferred rand(rng, transition(pomdp, s0, 3))
-    trans_prob_consistency_check(pomdp)
+    @test has_consistent_transition_distributions(pomdp)
 end
 
 
@@ -68,7 +68,7 @@ end
     pomdp = DroneSurveillancePOMDP(camera=QuadCam())
     obs = observations(pomdp)
     @test obs == ordered_observations(pomdp)
-    s0 = initialstate(pomdp, rng)
+    s0 = rand(rng, initialstate(pomdp))
     od = observation(pomdp, 1, s0)
     o = rand(rng, od)
     @test o == 6 # agent should be out
@@ -81,12 +81,12 @@ end
     o = rand(rng, observation(pomdp, 6, s))
     @show observation(pomdp, 6, s)
     @test o == 3 # north east    
-    obs_prob_consistency_check(pomdp)
+    @test has_consistent_observation_distributions(pomdp)
     # perfect cam 
     pomdp = DroneSurveillancePOMDP(camera=PerfectCam())
     obs = observations(pomdp)
     @test obs == ordered_observations(pomdp)
-    s0 = initialstate(pomdp, rng)
+    s0 = rand(rng, initialstate(pomdp))
     od = observation(pomdp, 1, s0)
     o = rand(rng, od)
     @test o == 10 # agent should be out
@@ -98,7 +98,7 @@ end
     s = DSState((2,2), (3,3))
     o = rand(rng, observation(pomdp, 6, s))
     @test o == 6 # north east    
-    obs_prob_consistency_check(pomdp)
+    @test has_consistent_observation_distributions(pomdp)
 end
 
 @testset "simulation" begin
@@ -112,6 +112,6 @@ end
 @testset "visualization" begin
     pomdp = DroneSurveillancePOMDP()
     rng = MersenneTwister(1)
-    s0 = initialstate(pomdp, rng)
+    s0 = rand(rng, initialstate(pomdp))
     render(pomdp, Dict(:step=>s0))
 end
