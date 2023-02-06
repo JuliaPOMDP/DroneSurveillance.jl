@@ -12,7 +12,7 @@ const ACTION_DIRS = (DSPos(0,1),
                      DSPos(-1,0),
                      DSPos(0,0))
                      
-POMDPs.actions(pomdp::DroneSurveillancePOMDP) = 1:N_ACTIONS
-POMDPs.actionindex(pomdp::DroneSurveillancePOMDP, a::Int64) = a
+POMDPs.actions(mdp::DroneSurveillanceMDP) = 1:N_ACTIONS
+POMDPs.actionindex(mdp::DroneSurveillanceMDP, a::Int64) = a
 
-POMDPs.actions(pomdp::DroneSurveillancePOMDP, s::DSPos) = 1:N_ACTIONS
+POMDPs.actions(mdp::DroneSurveillanceMDP, s::DSPos) = 1:N_ACTIONS

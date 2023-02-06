@@ -1,40 +1,40 @@
-function POMDPs.stateindex(pomdp::DroneSurveillancePOMDP, s::DSState)
-    if isterminal(pomdp, s)
-        return length(pomdp)
+function POMDPs.stateindex(mdp::DroneSurveillanceMDP, s::DSState)
+    if isterminal(mdp, s)
+        return length(mdp)
     end
-    nx, ny = pomdp.size 
+    nx, ny = mdp.size 
     LinearIndices((nx, ny, nx, ny))[s.quad[1], s.quad[2], s.agent[1], s.agent[2]]
 end
 
-function state_from_index(pomdp::DroneSurveillancePOMDP, si::Int64)
-    if si == length(pomdp)
-        return pomdp.terminal_state
+function state_from_index(mdp::DroneSurveillanceMDP, si::Int64)
+    if si == length(mdp)
+        return mdp.terminal_state
     end
-    nx, ny = pomdp.size 
+    nx, ny = mdp.size 
     s = CartesianIndices((nx, ny, nx, ny))[si]
     return DSState([s[1], s[2]], [s[3], s[4]])
 end
 
-# the state space is the POMDP itself
+# the state space is the MDP itself
 # we define an iterator over it
 
-POMDPs.states(pomdp::DroneSurveillancePOMDP) = pomdp
-Base.length(pomdp::DroneSurveillancePOMDP) = (pomdp.size[1] * pomdp.size[2])^2 + 1
+POMDPs.states(mdp::DroneSurveillanceMDP) = mdp
+Base.length(mdp::DroneSurveillanceMDP) = (mdp.size[1] * mdp.size[2])^2 + 1
 
-function Base.iterate(pomdp::DroneSurveillancePOMDP, i::Int64 = 1)
-    if i > length(pomdp)
+function Base.iterate(mdp::DroneSurveillanceMDP, i::Int64 = 1)
+    if i > length(mdp)
         return nothing
     end
-    s = state_from_index(pomdp, i)
+    s = state_from_index(mdp, i)
     return (s, i+1)
 end
 
-function POMDPs.initialstate(pomdp::DroneSurveillancePOMDP)
-    quad = pomdp.region_A
-    nx, ny = pomdp.size
-    fov_x, fov_y = pomdp.fov
+function POMDPs.initialstate(mdp::DroneSurveillanceMDP)
+    quad = mdp.region_A
+    nx, ny = mdp.size
+    fov_x, fov_y = mdp.fov
     states = DSState[]
-    if pomdp.agent_policy == :restricted 
+    if mdp.agent_policy == :restricted 
         xspace = fov_x:nx
         yspace = fov_y:ny
         for x in fov_x:nx

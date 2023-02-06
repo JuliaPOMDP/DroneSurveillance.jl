@@ -14,7 +14,7 @@ export
     DSState,
     QuadCam,
     PerfectCam,
-    DroneSurveillancePOMDP
+    DroneSurveillanceMDP
 
 
 const DSPos = SVector{2, Int64}
@@ -43,7 +43,7 @@ it is in its field of view.
 struct PerfectCam end
 
 """
-    DroneSurveillancePOMDP{M} <: POMDP{DSState, Int64, Int64}
+    DroneSurveillanceMDP{M} <: MDP{DSState, Int64, Int64}
 
 # Fields 
 - `size::Tuple{Int64, Int64} = (5,5)` size of the grid world
@@ -55,25 +55,25 @@ struct PerfectCam end
 - `terminal_state::DSState = DSState([-1, -1], [-1, -1])` a sentinel state to encode terminal states
 - `discount_factor::Float64 = 0.95` the discount factor
 """
-@with_kw mutable struct DroneSurveillancePOMDP{M} <: POMDP{DSState, Int64, Int64}
+@with_kw mutable struct DroneSurveillanceMDP{M} <: POMDP{DSState, Int64}
     size::Tuple{Int64, Int64} = (5,5)
     region_A::DSPos = [1, 1]
     region_B::DSPos = [size[1], size[2]]
     fov::Tuple{Int64, Int64} = (3, 3)
     agent_policy::Symbol = :restricted
-    camera::M = QuadCam() # PerfectCam
+    camera::M = M() # PerfectCam
     terminal_state::DSState = DSState([-1, -1], [-1, -1])
     discount_factor::Float64 = 0.95
 end
 
-POMDPs.isterminal(pomdp::DroneSurveillancePOMDP, s::DSState) = s == pomdp.terminal_state 
-POMDPs.discount(pomdp::DroneSurveillancePOMDP) = pomdp.discount_factor
+POMDPs.isterminal(mdp::DroneSurveillanceMDP, s::DSState) = s == mdp.terminal_state 
+POMDPs.discount(mdp::DroneSurveillanceMDP) = mdp.discount_factor
 
-function POMDPs.reward(pomdp::DroneSurveillancePOMDP, s::DSState, a::Int64)
+function POMDPs.reward(mdp::DroneSurveillanceMDP, s::DSState, a::Int64)
     if s.quad == s.agent 
         return -1.0
     end
-    if s.quad == pomdp.region_B
+    if s.quad == mdp.region_B
         return 1.0
     end
     return 0.0
@@ -82,7 +82,11 @@ end
 include("states.jl")
 include("actions.jl")
 include("transition.jl")
-include("observation.jl")
 include("visualization.jl")
+
+function __init__()
+    # When loaded, set default show backend
+    @info "DroneSurveillance loaded!"
+end
 
 end
