@@ -1,20 +1,23 @@
-function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::Int64)
-    # move quad
-    new_quad = s.quad + ACTION_DIRS[a]
-    if !(0 < new_quad[1] <= mdp.size[1]) || !(0 < new_quad[2] <= mdp.size[2]) || isterminal(mdp, s) || s.quad == s.agent
+function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::Int64) :: Union{Deterministic, SparseCat}
+    if isterminal(mdp, s) || s.quad == s.agent
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
     end
+
+    # move quad
+    # if it would move out of bounds, just stay in place
+    actor_inbounds(actor_state) = (0 < actor_state[1] <= mdp.size[1]) && (0 < actor_state[2] <= mdp.size[2])
+    new_quad = actor_inbounds(s.quad + ACTION_DIRS[a]) ? s.quad + ACTION_DIRS[a] : s.quad
 
     # move agent 
     new_states = MVector{N_ACTIONS, DSState}(undef)
     probs = @MVector(zeros(N_ACTIONS))
     for (i, act) in enumerate(ACTION_DIRS)
-        new_agent = s.agent + act
+        new_agent = actor_inbounds(s.agent + act) ? s.agent + act : s.agent
         if agent_inbounds(mdp, new_agent)
             new_states[i] = DSState(new_quad, new_agent)
             probs[i] += 1.0
         else
-            new_states[i] = mdp.terminal_state
+            new_states[i] = DSState(new_quad, s.agent)
         end
     end
     normalize!(probs, 1)

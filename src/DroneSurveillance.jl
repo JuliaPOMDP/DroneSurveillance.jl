@@ -55,7 +55,7 @@ struct PerfectCam end
 - `terminal_state::DSState = DSState([-1, -1], [-1, -1])` a sentinel state to encode terminal states
 - `discount_factor::Float64 = 0.95` the discount factor
 """
-@with_kw mutable struct DroneSurveillanceMDP{M} <: POMDP{DSState, Int64}
+@with_kw mutable struct DroneSurveillanceMDP{M} <: MDP{DSState, Int64}
     size::Tuple{Int64, Int64} = (5,5)
     region_A::DSPos = [1, 1]
     region_B::DSPos = [size[1], size[2]]
@@ -71,12 +71,12 @@ POMDPs.discount(mdp::DroneSurveillanceMDP) = mdp.discount_factor
 
 function POMDPs.reward(mdp::DroneSurveillanceMDP, s::DSState, a::Int64)
     if s.quad == s.agent 
-        return -1.0
+        return -100.0
     end
     if s.quad == mdp.region_B
         return 1.0
     end
-    return 0.0
+    return -0.2
 end
 
 include("states.jl")
@@ -89,4 +89,7 @@ function __init__()
     @info "DroneSurveillance loaded!"
 end
 
+function stateindex(mdp::DroneSurveillanceMDP{M}, s) where {M}
+    s[1] + (s[2]-1) * mdp.size[1]
+end
 end

@@ -1,16 +1,16 @@
-function POMDPModelTools.render(pomdp::DroneSurveillancePOMDP, step;
+function POMDPModelTools.render(mdp::DroneSurveillanceMDP, step;
                                 viz_rock_state=true)
-    nx, ny = pomdp.size
+    nx, ny = mdp.size
     cells = []
     for x in 1:nx, y in 1:ny
         ctx = cell_ctx((x,y), (nx,ny))
         clr = "white"
         if get(step, :s, nothing) != nothing 
-            if in_fov(pomdp, step[:s].quad, DSPos(x,y))
+            if in_fov(mdp, step[:s].quad, DSPos(x,y))
                 clr = ARGB(0.0, 0., 1.0, 0.9)
             end
         end
-        if DSPos(x, y) == pomdp.region_A || DSPos(x, y) == pomdp.region_B
+        if DSPos(x, y) == mdp.region_A || DSPos(x, y) == mdp.region_B
             clr = "green"
         end
         cell = compose(ctx, rectangle(), fill(clr))
@@ -57,6 +57,6 @@ function render_agent(ctx)
     return compose(ctx, head, body)
 end
 
-function in_fov(pomdp::DroneSurveillancePOMDP, quad::DSPos, s::DSPos)
-    return abs(s[1] - quad[1]) < pomdp.fov[1] - 1 && abs(s[2] - quad[2]) < pomdp.fov[2] - 1
+function in_fov(mdp::DroneSurveillanceMDP, quad::DSPos, s::DSPos)
+    return abs(s[1] - quad[1]) < mdp.fov[1] - 1 && abs(s[2] - quad[2]) < mdp.fov[2] - 1
 end
