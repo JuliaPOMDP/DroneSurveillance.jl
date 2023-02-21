@@ -15,7 +15,12 @@ function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::Int64) :: U
         new_agent = actor_inbounds(s.agent + act) ? s.agent + act : s.agent
         if agent_inbounds(mdp, new_agent)
             new_states[i] = DSState(new_quad, new_agent)
-            probs[i] += 1.0
+            # Add extra probability to action in direction of drone
+            if act == normalize(s.quad - s.agent)
+                probs[i] += 2.0
+            else
+                probs[i] += 1.0
+            end
         else
             new_states[i] = DSState(new_quad, s.agent)
         end
