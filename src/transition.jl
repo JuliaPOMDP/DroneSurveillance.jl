@@ -1,4 +1,6 @@
-function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::Int64) :: Union{Deterministic, SparseCat}
+using Debugger
+# function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::Int64) :: Union{Deterministic, SparseCat}
+function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
     if isterminal(mdp, s) || s.quad == s.agent
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
     end
@@ -6,7 +8,7 @@ function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::Int64) :: U
     # move quad
     # if it would move out of bounds, just stay in place
     actor_inbounds(actor_state) = (0 < actor_state[1] <= mdp.size[1]) && (0 < actor_state[2] <= mdp.size[2])
-    new_quad = actor_inbounds(s.quad + ACTION_DIRS[a]) ? s.quad + ACTION_DIRS[a] : s.quad
+    new_quad = actor_inbounds(s.quad + a) ? s.quad + a : s.quad
 
     # move agent 
     new_states = MVector{N_ACTIONS, DSState}(undef)
@@ -17,6 +19,7 @@ function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::Int64) :: U
             new_states[i] = DSState(new_quad, new_agent)
             # Add extra probability to action in direction of drone
             if act == normalize(s.quad - s.agent)
+                # if the drone and agent are on the same x- or y-line
                 probs[i] += 2.0
             else
                 probs[i] += 1.0
