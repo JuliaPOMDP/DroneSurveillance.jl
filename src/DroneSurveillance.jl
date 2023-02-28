@@ -16,6 +16,7 @@ export
     PerfectCam,
     DroneSurveillanceMDP
 
+export DSAgentStrat, DSTransitionModel, DSPerfectModel, DSApproximateModel
 
 const DSPos = SVector{2, Int64}
 
@@ -64,6 +65,8 @@ struct PerfectCam end
     camera::M = M() # PerfectCam
     terminal_state::DSState = DSState([-1, -1], [-1, -1])
     discount_factor::Float64 = 0.95
+    agent_strategy = DSAgentStrat(0.)
+    transition_model = DSPerfectModel()
 end
 
 POMDPs.isterminal(mdp::DroneSurveillanceMDP, s::DSState) = s == mdp.terminal_state 
