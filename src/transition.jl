@@ -1,7 +1,7 @@
 struct DSAgentStrat
     p :: Real
 end
-is_perfect_agent_step(agent::DSAgentStrat) = rand() <= agent.p
+should_do_perfect_agent_step(agent::DSAgentStrat) = rand() <= agent.p
 
 abstract type DSTransitionModel end
 struct DSPerfectModel <: DSTransitionModel end
@@ -55,31 +55,39 @@ function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, tra
 end
 
 
+function agent_optimal_action(s::DSState)
+    vec = s.quad - s.agent
+    # similar to dot = atan2(vec'*[1; 0])
+    angle = atan(vec[2] - 0, vec[1] - 1)
+    if π/4 <= angle < π*3/4
+        a = ACTIONS_DICT[:north]
+    elseif -π/4 <= angle <= π/4
+        a = ACTIONS_DICT[:east]
+    elseif -π*3/4 <= angle < -π/4
+        a = ACTIONS_DICT[:south]
+    else 
+        a = ACTIONS_DICT[:west]
+    end
+    return a
+end
+
 function move_agent(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, new_quad, s::DSState)
     actor_inbounds(actor_state) = (0 < actor_state[1] <= mdp.size[1]) && (0 < actor_state[2] <= mdp.size[2])
 
     new_states = MVector{N_ACTIONS, DSState}(undef)
     probs = @MVector(zeros(N_ACTIONS))
+    do_perfect_action = should_do_perfect_agent_step(agent_strategy)
     for (i, act) in enumerate(ACTION_DIRS)
         new_agent = actor_inbounds(s.agent + act) ? s.agent + act : s.agent
         if agent_inbounds(mdp, new_agent)
             new_states[i] = DSState(new_quad, new_agent)
             # Add extra probability to action in direction of drone
-            if is_perfect_agent_step(agent_strategy)
-                # TODO: MAKE THIS ACTUALLY "PERFECT"
-                if act == normalize(s.quad - s.agent)
-                    # if the drone and agent are on the same x- or y-line
-                    probs[i] += 10.0
-                else
+            if do_perfect_action 
+                if act == agent_optimal_action(s)
                     probs[i] += 1.0
                 end
             else
-                if act == normalize(s.quad - s.agent)
-                    # if the drone and agent are on the same x- or y-line
-                    probs[i] += 1.0
-                else
-                    probs[i] += 1.0
-                end
+                probs[i] += 1.0
             end
         else
             new_states[i] = DSState(new_quad, s.agent)
