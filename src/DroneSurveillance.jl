@@ -76,7 +76,8 @@ function POMDPs.reward(mdp::DroneSurveillanceMDP, s::DSState, a::DSPos)
     if s.quad == mdp.region_B
         return 1.0
     end
-    return -0.2
+    norm(x) = sqrt(sum(x.^2))
+    return -0.2 - norm(s.quad - [mdp.size...])/1000
 end
 
 include("states.jl")
