@@ -43,7 +43,7 @@ end
 function agent_optimal_action_idx(s::DSState) :: Int
     vec = s.quad - s.agent
     # similar to dot = atan2(vec'*[1; 0])
-    angle = atan(vec[2] - 0, vec[1] - 1)
+    angle = atan(vec[2], vec[1])
     if π/4 <= angle < π*3/4
         a = ACTIONS_DICT[:north]
     elseif -π/4 <= angle <= π/4
