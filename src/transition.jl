@@ -24,8 +24,12 @@ function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, tra
 
         # then, move agent (independently)
         new_agent_distr = move_agent(mdp, agent_strategy, new_quad, s)
-        return SparseCat([DSState(new_agent, new_quad)
-                          for new_agent in new_agent_distr.vals], new_agent_distr.probs)
+        if new_agent_distr isa SparseCat
+            return SparseCat([DSState(new_quad, new_agent)
+                              for new_agent in new_agent_distr.vals], new_agent_distr.probs)
+        else
+            return Deterministic(DSState(new_quad, new_agent_distr.val))
+        end
     end
 end
 
@@ -60,26 +64,26 @@ function move_agent(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, new
     entity_inbounds(entity_state) = (0 < entity_state[1] <= mdp.size[1]) && (0 < entity_state[2] <= mdp.size[2])
     @assert entity_inbounds(s.agent) "Tried to move agent that's already out of bounds! $(s.agent), $(mdp.size)"
 
-    new_agent_states = MVector{N_ACTIONS, DSPos}(undef)
-    probs = @MVector(zeros(N_ACTIONS))
-    do_perfect_action::Bool = should_do_perfect_agent_step(agent_strategy)
-    for (i, act) in enumerate(ACTION_DIRS)
+    if should_do_perfect_agent_step(agent_strategy)
+        act_idx = agent_optimal_action_idx(s)
+        act = ACTION_DIRS[act_idx]
         new_agent = entity_inbounds(s.agent + act) ? s.agent + act : s.agent
-        if entity_inbounds(new_agent)
-            new_agent_states[i] = new_agent
-            # Add extra probability to action in direction of drone
-            if do_perfect_action 
-                if act == ACTION_DIRS[agent_optimal_action_idx(s)]
-                    probs[i] += 1.0
-                end
-            else  # just go randomly
+        return Deterministic(new_agent)
+    else
+        new_agent_states = MVector{N_ACTIONS, DSPos}(undef)
+        probs = @MVector(zeros(N_ACTIONS))
+        for (i, act) in enumerate(ACTION_DIRS)
+            new_agent = entity_inbounds(s.agent + act) ? s.agent + act : s.agent
+            if entity_inbounds(new_agent)
+                new_agent_states[i] = new_agent
+                # Add extra probability to action in direction of drone
+                # just go randomly
                 probs[i] += 1.0
+            else
+                @assert false "We should never get here. Maybe the agent was initialized out of bounds in the first place?"
             end
-        else
-            new_agent_states[i] = s.agent
-            @assert false "We should never get here. Maybe the agent was initialized out of bounds in the first place?"
         end
+        normalize!(probs, 1)
     end
-    normalize!(probs, 1)
     return SparseCat(new_agent_states, probs)
 end
