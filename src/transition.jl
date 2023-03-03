@@ -16,26 +16,27 @@ end
 function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSPerfectModel, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
     if isterminal(mdp, s) || s.quad == s.agent
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
+    else
+        # first, move quad
+        # if it would move out of bounds, just stay in place
+        actor_inbounds(actor_state) = (0 < actor_state[1] <= mdp.size[1]) && (0 < actor_state[2] <= mdp.size[2])
+        new_quad = actor_inbounds(s.quad + a) ? s.quad + a : s.quad
+
+        # then, move agent (independently)
+        new_agent_distr = move_agent(mdp, agent_strategy, new_quad, s)
+        return SparseCat([DSState(new_agent, new_quad)
+                          for new_agent in new_agent_distr.vals], new_agent_distr.probs)
     end
-
-    # move quad
-    # if it would move out of bounds, just stay in place
-    actor_inbounds(actor_state) = (0 < actor_state[1] <= mdp.size[1]) && (0 < actor_state[2] <= mdp.size[2])
-    new_quad = actor_inbounds(s.quad + a) ? s.quad + a : s.quad
-
-    # move agent 
-    new_states, probs = move_agent(mdp, agent_strategy, new_quad, s)
-    return SparseCat(new_states, probs)
 end
 
 # for our approximate model
 function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSApproximateModel, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
     if isterminal(mdp, s) || s.quad == s.agent
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
+    else
+        new_states, probs = predict(transition_model, s, a)
+        return SparseCat(new_states, probs)
     end
-    # TODO actually implement predict function
-    new_states, probs = predict(transition_model, s, a)
-    return SparseCat(new_states, probs)
 end
 
 
@@ -55,29 +56,30 @@ function agent_optimal_action_idx(s::DSState) :: Int
     return a
 end
 
-function move_agent(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, new_quad, s::DSState)
+function move_agent(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, new_quad::DSPos, s::DSState)
     entity_inbounds(entity_state) = (0 < entity_state[1] <= mdp.size[1]) && (0 < entity_state[2] <= mdp.size[2])
+    @assert entity_inbounds(s.agent) "Tried to move agent that's already out of bounds! $(s.agent), $(mdp.size)"
 
-    new_states = MVector{N_ACTIONS, DSState}(undef)
+    new_agent_states = MVector{N_ACTIONS, DSPos}(undef)
     probs = @MVector(zeros(N_ACTIONS))
-    do_perfect_action = should_do_perfect_agent_step(agent_strategy)
+    do_perfect_action::Bool = should_do_perfect_agent_step(agent_strategy)
     for (i, act) in enumerate(ACTION_DIRS)
         new_agent = entity_inbounds(s.agent + act) ? s.agent + act : s.agent
         if entity_inbounds(new_agent)
-            new_states[i] = DSState(new_quad, new_agent)
+            new_agent_states[i] = new_agent
             # Add extra probability to action in direction of drone
             if do_perfect_action 
                 if act == ACTION_DIRS[agent_optimal_action_idx(s)]
                     probs[i] += 1.0
                 end
-            else
+            else  # just go randomly
                 probs[i] += 1.0
             end
         else
-            new_states[i] = DSState(new_quad, s.agent)
-            @assert false "We should never get here"
+            new_agent_states[i] = s.agent
+            @assert false "We should never get here. Maybe the agent was initialized out of bounds in the first place?"
         end
     end
     normalize!(probs, 1)
-    return new_states, probs
+    return SparseCat(new_agent_states, probs)
 end
