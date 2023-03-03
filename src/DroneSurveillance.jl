@@ -63,7 +63,7 @@ struct PerfectCam end
     fov::Tuple{Int64, Int64} = (3, 3)
     agent_policy::Symbol = :restricted
     camera::M = M() # PerfectCam
-    terminal_state::DSState = DSState([-1, -1], [-1, -1])
+    terminal_state::DSState = DSState([-1, -1], [-2, -2])
     discount_factor::Float64 = 0.95
     agent_strategy = DSAgentStrat(0.)
     transition_model = DSPerfectModel()
@@ -74,13 +74,15 @@ POMDPs.discount(mdp::DroneSurveillanceMDP) = mdp.discount_factor
 
 function POMDPs.reward(mdp::DroneSurveillanceMDP, s::DSState, a::DSPos)
     if s.quad == s.agent 
-        return -100.0
+        return -1000.0
+    elseif s.quad == mdp.region_B
+        return 100.0
+    elseif isterminal(mdp, s)
+        return 0
+    else
+        norm(x) = sqrt(sum(x.^2))
+        return -0.2 - norm(s.quad - [mdp.size...])/1000
     end
-    if s.quad == mdp.region_B
-        return 1.0
-    end
-    norm(x) = sqrt(sum(x.^2))
-    return -0.2 - norm(s.quad - [mdp.size...])/1000
 end
 
 include("states.jl")

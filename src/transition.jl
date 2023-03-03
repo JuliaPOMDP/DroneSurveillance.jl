@@ -14,7 +14,7 @@ end
 
 # for perfect model
 function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSPerfectModel, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
-    if isterminal(mdp, s) || s.quad == s.agent
+    if isterminal(mdp, s) || s.quad == s.agent || s.quad == mdp.region_B
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
     else
         # first, move quad
@@ -35,7 +35,7 @@ end
 
 # for our approximate model
 function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSApproximateModel, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
-    if isterminal(mdp, s) || s.quad == s.agent
+    if isterminal(mdp, s) || s.quad == s.agent || s.quad == mdp.region_B
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
     else
         new_states, probs = predict(transition_model, s, a)
