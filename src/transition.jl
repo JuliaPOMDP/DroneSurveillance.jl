@@ -40,15 +40,17 @@ function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, tra
         # if it would move out of bounds, just stay in place
         actor_inbounds(actor_state) = (0 < actor_state[1] <= mdp.size[1]) && (0 < actor_state[2] <= mdp.size[2])
         new_quad = actor_inbounds(s.quad + a) ? s.quad + a : s.quad
+        new_quad_distr = SparseCat([new_quad, s.quad], [3//4, 1//4])
 
         # then, move agent (independently)
         new_agent_distr = move_agent(mdp, agent_strategy, new_quad, s)
-        if new_agent_distr isa SparseCat
-            return SparseCat([DSState(new_quad, new_agent)
-                              for new_agent in new_agent_distr.vals], new_agent_distr.probs)
-        else
-            return Deterministic(DSState(new_quad, new_agent_distr.val))
+
+        new_state_dist = let new_state_distr = new_quad_distr ⊗ new_agent_distr
+            states = [DSState(q, a) for (q, a) in new_state_distr.vals]
+            SparseCat(states, new_state_distr.probs)
         end
+
+        return new_state_dist
     end
 end
 
@@ -83,12 +85,14 @@ function move_agent(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, new
     entity_inbounds(entity_state) = (0 < entity_state[1] <= mdp.size[1]) && (0 < entity_state[2] <= mdp.size[2])
     @assert entity_inbounds(s.agent) "Tried to move agent that's already out of bounds! $(s.agent), $(mdp.size)"
 
-    if should_do_perfect_agent_step(agent_strategy)
+    perfect_agent = begin
+        s = DSState(new_quad, s.agent)
         act_idx = agent_optimal_action_idx(s)
         act = ACTION_DIRS[act_idx]
         new_agent = entity_inbounds(s.agent + act) ? s.agent + act : s.agent
-        return Deterministic(new_agent)
-    else
+        Deterministic(new_agent)
+    end
+    random_agent = begin
         new_agent_states = MVector{N_ACTIONS, DSPos}(undef)
         probs = @MVector(zeros(N_ACTIONS))
         for (i, act) in enumerate(ACTION_DIRS)
@@ -103,6 +107,7 @@ function move_agent(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, new
             end
         end
         normalize!(probs, 1)
+        SparseCat(new_agent_states, probs)
     end
-    return SparseCat(new_agent_states, probs)
+    return (agent_strategy.p*perfect_agent) ⊕ ((1-agent_strategy.p)*random_agent)
 end
