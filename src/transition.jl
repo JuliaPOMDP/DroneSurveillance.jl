@@ -86,7 +86,6 @@ function move_agent(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, new
     @assert entity_inbounds(s.agent) "Tried to move agent that's already out of bounds! $(s.agent), $(mdp.size)"
 
     perfect_agent = begin
-        s = DSState(new_quad, s.agent)
         act_idx = agent_optimal_action_idx(s)
         act = ACTION_DIRS[act_idx]
         new_agent = entity_inbounds(s.agent + act) ? s.agent + act : s.agent
