@@ -1,7 +1,26 @@
+import Base: product
+import Base
+
 struct DSAgentStrat
     p :: Real
 end
 should_do_perfect_agent_step(agent::DSAgentStrat) = rand() <= agent.p
+
+Base.:*(λ::Real, d::Deterministic) = SparseCat([d.val], [λ])
+Base.:*(λ::Real, sc::SparseCat) = SparseCat(sc.vals, λ.*sc.probs)
+"Add SparseCats (usually have to be multiplied by weight first)."
+function ⊕(sc_lhs::SparseCat, sc_rhs::SparseCat)
+    SparseCat(vcat(sc_lhs.vals, sc_rhs.vals),
+              vcat(sc_lhs.probs, sc_rhs.probs))
+end
+"Multiply SparseCat"
+⊗(d_lhs::Deterministic, sc_rhs::SparseCat) = SparseCat([d_lhs.val], [1]) ⊗ sc_rhs
+⊗(sc_lhs::SparseCat, d_rhs::Deterministic) =  sc_lhs ⊗ SparseCat([d_rhs.val], [1])
+function ⊗(sc_lhs::SparseCat, sc_rhs::SparseCat)
+    vals = product(sc_lhs.vals, sc_rhs.vals) |> collect
+    probs = map(prod, product(sc_lhs.probs, sc_rhs.probs)) |> collect
+    return SparseCat(vals[:], probs[:])
+end
 
 abstract type DSTransitionModel end
 struct DSPerfectModel <: DSTransitionModel end
