@@ -16,7 +16,7 @@ export
     PerfectCam,
     DroneSurveillanceMDP
 
-export DSAgentStrat, DSTransitionModel, DSPerfectModel, DSApproximateModel
+export DSAgentStrat, DSTransitionModel, DSPerfectModel, DSApproximateModel, DSLinModel
 
 const DSPos = SVector{2, Int64}
 

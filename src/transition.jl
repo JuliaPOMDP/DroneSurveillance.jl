@@ -25,6 +25,22 @@ end
 abstract type DSTransitionModel end
 struct DSPerfectModel <: DSTransitionModel end
 struct DSApproximateModel <: DSTransitionModel end
+struct DSLinModel{T} <: DSTransitionModel where T <: Real
+    θ_Δx :: Matrix{T}
+    θ_Δy :: Matrix{T}
+end
+
+function predict(model::DSLinModel, s::DSState, a::DSPos)
+    nx, ny = length.([model.θ_Δx, model.θ_Δy]) .÷ 2
+    states = (-nx:nx, -ny:ny) .|> collect
+
+    Δx = s.agent.x - s.quad.x
+    Δy = s.agent.y - s.quad.y
+    ξ = [Δx, Δy, a.x, a.y, 1]
+    softmax(x) = exp.(x) / sum(exp.(x))
+    probs = (softmax(model.θ_Δx * ξ), softmax(model.θ_Δy * ξ))
+    return SparseCat(states[1], probs[1]), SparseCat(states[2], probs[2])
+end
 
 
 function POMDPs.transition(mdp::DroneSurveillanceMDP, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
@@ -50,17 +66,33 @@ function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, tra
             SparseCat(states, new_state_distr.probs)
         end
 
+        # TODO: probably we want to cull states with a probability < ϵ
+        # and then re-normalize
         return new_state_dist
     end
 end
 
 # for our approximate model
-function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSApproximateModel, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
+function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSLinModel, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
     if isterminal(mdp, s) || s.quad == s.agent || s.quad == mdp.region_B
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
     else
-        new_states, probs = predict(transition_model, s, a)
-        return SparseCat(new_states, probs)
+        Δx_dist, Δy_dist = predict(transition_model, s, a)
+        new_state_dist = let Δ_dist =  Δx_dist ⊗ Δy_dist
+            # TODO: add possibility of no movement
+            # with movement
+            new_states_with_movement = 
+                        [DSState(s.quad + a, s.quad + a + DSPos(Δ_quad_agent...))
+                         for Δ_quad_agent in Δ_dist.vals]
+            SparseCat(new_states, Δ_dist.probs)
+            # without movement
+            new_states_no_movement = 
+                        [DSState(s.quad, s.quad + DSPos(Δ_quad_agent...))
+                         for Δ_quad_agent in Δ_dist.vals]
+            SparseCat(new_states_, Δ_dist.probs)
+            (3//4 * new_states_with_movement ⊕ 1//4 * new_states_no_movement)
+        end
+        return new_state_dist
     end
 end
 
