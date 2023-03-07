@@ -1,5 +1,6 @@
 import Base: product
 import Base
+using LinearAlgebra: normalize!
 
 struct DSAgentStrat
     p :: Real
@@ -26,12 +27,12 @@ abstract type DSTransitionModel end
 struct DSPerfectModel <: DSTransitionModel end
 struct DSApproximateModel <: DSTransitionModel end
 struct DSLinModel{T} <: DSTransitionModel where T <: Real
-    θ_Δx :: Matrix{T}
-    θ_Δy :: Matrix{T}
+    θ_Δx :: AbstractMatrix{T}
+    θ_Δy :: AbstractMatrix{T}
 end
 
-function predict(model::DSLinModel, s::DSState, a::DSPos)
-    nx, ny = length.([model.θ_Δx, model.θ_Δy]) .÷ 2
+function predict(model::DSLinModel, s::DSState, a::DSPos; ϵ_prune=1e-4)
+    nx, ny = size.([model.θ_Δx, model.θ_Δy], 1) .÷ 2
     states = (-nx:nx, -ny:ny) .|> collect
 
     Δx = s.agent.x - s.quad.x
@@ -39,7 +40,14 @@ function predict(model::DSLinModel, s::DSState, a::DSPos)
     ξ = [Δx, Δy, a.x, a.y, 1]
     softmax(x) = exp.(x) / sum(exp.(x))
     probs = (softmax(model.θ_Δx * ξ), softmax(model.θ_Δy * ξ))
-    return SparseCat(states[1], probs[1]), SparseCat(states[2], probs[2])
+
+    # we prune states with small probability
+    idx = probs[1] .>= ϵ_prune, probs[2] .>= ϵ_prune
+    states = states[1][idx[1]], states[2][idx[2]]
+    probs = probs[1][idx[1]], probs[2][idx[2]]
+    normalize!(probs[1], 1); normalize!(probs[2], 1); 
+    lhs_distr, rhs_distr = SparseCat(states[1], probs[1]), SparseCat(states[2], probs[2])
+    return lhs_distr, rhs_distr
 end
 
 
@@ -121,6 +129,7 @@ function move_agent(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, new
         act_idx = agent_optimal_action_idx(s)
         act = ACTION_DIRS[act_idx]
         new_agent = entity_inbounds(s.agent + act) ? s.agent + act : s.agent
+        @assert entity_inbounds(new_agent) "Somehow the new agent is out of bounds??"
         Deterministic(new_agent)
     end
     random_agent = begin
