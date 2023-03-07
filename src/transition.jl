@@ -78,18 +78,18 @@ function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, tra
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
     else
         Δx_dist, Δy_dist = predict(transition_model, s, a)
-        new_state_dist = let Δ_dist =  Δx_dist ⊗ Δy_dist
-            # TODO: add possibility of no movement
-            # with movement
-            new_states_with_movement = 
-                        [DSState(s.quad + a, s.quad + a + DSPos(Δ_quad_agent...))
-                         for Δ_quad_agent in Δ_dist.vals]
-            SparseCat(new_states, Δ_dist.probs)
-            # without movement
-            new_states_no_movement = 
-                        [DSState(s.quad, s.quad + DSPos(Δ_quad_agent...))
-                         for Δ_quad_agent in Δ_dist.vals]
-            SparseCat(new_states_, Δ_dist.probs)
+        new_state_dist = let Δ_dist = Δx_dist ⊗ Δy_dist
+            # the agent stays in place with chance 1/4
+            new_states_with_movement = begin
+                new_states = [DSState(s.quad + a, s.quad + a + DSPos(Δ_quad_agent...))
+                              for Δ_quad_agent in Δ_dist.vals]
+                SparseCat(new_states, Δ_dist.probs)
+            end
+            new_states_no_movement = begin
+                new_states = [DSState(s.quad, s.quad + DSPos(Δ_quad_agent...))
+                              for Δ_quad_agent in Δ_dist.vals]
+                SparseCat(new_states, Δ_dist.probs)
+            end
             (3//4 * new_states_with_movement ⊕ 1//4 * new_states_no_movement)
         end
         return new_state_dist
