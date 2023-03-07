@@ -73,15 +73,15 @@ POMDPs.isterminal(mdp::DroneSurveillanceMDP, s::DSState) = s == mdp.terminal_sta
 POMDPs.discount(mdp::DroneSurveillanceMDP) = mdp.discount_factor
 
 function POMDPs.reward(mdp::DroneSurveillanceMDP, s::DSState, a::DSPos)
-    if s.quad == s.agent 
-        return -1000.0
+    if isterminal(mdp, s)
+        return 0
     elseif s.quad == mdp.region_B
         return 100.0
-    elseif isterminal(mdp, s)
-        return 0
+    elseif s.quad == s.agent
+        return -1000.0
     else
         norm(x) = sqrt(sum(x.^2))
-        return -0.2 - norm(s.quad - [mdp.size...])/1000
+        return - 0.2 - norm(s.quad - mdp.region_B)/1000
     end
 end
 
