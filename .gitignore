@@ -2,3 +2,5 @@
 .github/workflows/CI.yml
 .github/workflows/CI.yml
 .github/workflows/CI.yml
+Manifest.toml
+.DS_Store
