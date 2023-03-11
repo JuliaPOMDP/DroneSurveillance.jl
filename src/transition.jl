@@ -30,7 +30,13 @@ struct DSLinModel{T} <: DSTransitionModel where T <: Real
     θ_Δx :: AbstractMatrix{T}
     θ_Δy :: AbstractMatrix{T}
 end
+struct DSConformalizedModel{T} <: DSTransitionModel where T <: Real
+    lin_model :: DSLinModel{T}
+    conf_map_Δx :: Dict{Float64, Float64}
+    conf_map_Δy :: Dict{Float64, Float64}
+end
 
+# TODO maybe move this to the other project
 function predict(model::DSLinModel, s::DSState, a::DSPos; ϵ_prune=1e-4)
     nx, ny = size.([model.θ_Δx, model.θ_Δy], 1) .÷ 2
     states = (-nx:nx, -ny:ny) .|> collect
@@ -48,6 +54,26 @@ function predict(model::DSLinModel, s::DSState, a::DSPos; ϵ_prune=1e-4)
     normalize!(probs[1], 1); normalize!(probs[2], 1); 
     lhs_distr, rhs_distr = SparseCat(states[1], probs[1]), SparseCat(states[2], probs[2])
     return lhs_distr, rhs_distr
+end
+
+function predict(conf_model::DSConformalizedModel, s::DSState, a::DSPos, λ::Real; ϵ_prune=1e-4)
+    lin_model = conf_model.lin_model
+    nx, ny = size.([lin_model.θ_Δx, lin_model.θ_Δy], 1) .÷ 2
+    states = (-nx:nx, -ny:ny) .|> collect
+
+    Δx = s.agent.x - s.quad.x
+    Δy = s.agent.y - s.quad.y
+    ξ = [Δx, Δy, a.x, a.y, 1]
+    softmax(x) = exp.(x) / sum(exp.(x))
+    probs = (softmax(lin_model.θ_Δx * ξ), softmax(lin_model.θ_Δy * ξ))
+    λ_hat_Δx = conf_model.conf_map_Δx[λ]
+    λ_hat_Δy = conf_model.conf_map_Δy[λ]
+
+    idx_Δx = probs[1] .>= (1-λ_hat_Δx)
+    idx_Δy = probs[2] .>= (1-λ_hat_Δy)
+    pred_set_Δx = states[1][idx_Δx] |> Set
+    pred_set_Δy = states[2][idx_Δy] |> Set
+    return (pred_set_Δx, pred_set_Δy)
 end
 
 
@@ -101,6 +127,15 @@ function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, tra
             (3//4 * new_states_with_movement ⊕ 1//4 * new_states_no_movement)
         end
         return new_state_dist
+    end
+end
+
+# for our conformalized model
+function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSConformalizedModel, s::DSState, a::DSPos, λ::Real)
+    if isterminal(mdp, s) || s.quad == s.agent || s.quad == mdp.region_B
+        return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
+    else
+        return predict(transition_model, s, a, λ)
     end
 end
 
