@@ -1,6 +1,6 @@
 import Base: product
 import Base
-using LinearAlgebra: normalize!
+using LinearAlgebra: normalize, normalize!
 
 struct DSAgentStrat
     p :: Real
@@ -36,24 +36,27 @@ struct DSConformalizedModel{T} <: DSTransitionModel where T <: Real
     conf_map_Δy :: Dict{Float64, Float64}
 end
 
+function prune_states(sc::SparseCat, ϵ_prune)
+    idx = sc.probs .>= ϵ_prune
+    SparseCat(sc.vals[idx], normalize(sc.probs[idx], 1))
+end
+
 # TODO maybe move this to the other project
 function predict(model::DSLinModel, s::DSState, a::DSPos; ϵ_prune=1e-4)
     nx, ny = size.([model.θ_Δx, model.θ_Δy], 1) .÷ 2
-    states = (-nx:nx, -ny:ny) .|> collect
+    states_Δx, states_Δy = (-nx:nx, -ny:ny) .|> collect
 
     Δx = s.agent.x - s.quad.x
     Δy = s.agent.y - s.quad.y
     ξ = [Δx, Δy, a.x, a.y, 1]
     softmax(x) = exp.(x) / sum(exp.(x))
-    probs = (softmax(model.θ_Δx * ξ), softmax(model.θ_Δy * ξ))
+    probs_Δx, probs_Δy = (softmax(model.θ_Δx * ξ),
+                          softmax(model.θ_Δy * ξ))
 
     # we prune states with small probability
-    idx = probs[1] .>= ϵ_prune, probs[2] .>= ϵ_prune
-    states = states[1][idx[1]], states[2][idx[2]]
-    probs = probs[1][idx[1]], probs[2][idx[2]]
-    normalize!(probs[1], 1); normalize!(probs[2], 1); 
-    lhs_distr, rhs_distr = SparseCat(states[1], probs[1]), SparseCat(states[2], probs[2])
-    return lhs_distr, rhs_distr
+    return (prune_states(SparseCat(states_Δx, probs_Δx), ϵ_prune),
+            prune_states(SparseCat(states_Δy, probs_Δy), ϵ_prune))
+end
 end
 
 function predict(conf_model::DSConformalizedModel, s::DSState, a::DSPos, λ::Real; ϵ_prune=1e-4)
