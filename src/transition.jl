@@ -57,6 +57,31 @@ function predict(model::DSLinModel, s::DSState, a::DSPos; ϵ_prune=1e-4)
     return (prune_states(SparseCat(states_Δx, probs_Δx), ϵ_prune),
             prune_states(SparseCat(states_Δy, probs_Δy), ϵ_prune))
 end
+
+# make a prediction set with the linear model
+function predict(model::DSLinModel, s::DSState, a::DSPos, λ::Real; ϵ_prune=1e-4)
+    lhs_distr, rhs_distr = predict(model, s, a; ϵ_prune=ϵ_prune)
+
+    # Shuffle predictions, keep adding to prediction set until just over or just under
+    # desired probability (whichever has smaller "gap" to λ).
+    lhs_pred_set, rhs_pred_set = Tuple([begin
+            perm = shuffle(eachindex(distr.probs))
+            p_perm = distr.probs[perm]
+            p_cum = cumsum(p_perm)
+
+            idx = begin
+                idx = findfirst(>=(λ), p_cum)
+                gap_hi = p_cum[idx] - λ
+                gap_lo = λ - get(p_cum, idx-1, 0)
+                (gap_hi < gap_lo ? idx : idx-1)
+            end
+
+            val_perm = distr.vals[perm]
+            Set(val_perm[1:idx])
+        end
+        for distr in [lhs_distr, rhs_distr]
+    ])
+    return lhs_pred_set, lhs_pred_set
 end
 
 function predict(conf_model::DSConformalizedModel, s::DSState, a::DSPos, λ::Real; ϵ_prune=1e-4)
