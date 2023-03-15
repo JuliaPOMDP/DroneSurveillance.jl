@@ -30,6 +30,10 @@ struct DSLinModel{T} <: DSTransitionModel where T <: Real
     θ_Δx :: AbstractMatrix{T}
     θ_Δy :: AbstractMatrix{T}
 end
+mutable struct DSLinCalModel{T} <: DSTransitionModel where T <: Real
+    lin_model :: DSLinModel{T}
+    temperature :: Float64
+end
 struct DSConformalizedModel{T} <: DSTransitionModel where T <: Real
     lin_model :: DSLinModel{T}
     conf_map_Δx :: Dict{Float64, Float64}
@@ -52,6 +56,25 @@ function predict(model::DSLinModel, s::DSState, a::DSPos; ϵ_prune=1e-4)
     softmax(x) = exp.(x) / sum(exp.(x))
     probs_Δx, probs_Δy = (softmax(model.θ_Δx * ξ),
                           softmax(model.θ_Δy * ξ))
+
+    # we prune states with small probability
+    return (prune_states(SparseCat(states_Δx, probs_Δx), ϵ_prune),
+            prune_states(SparseCat(states_Δy, probs_Δy), ϵ_prune))
+end
+
+function predict(cal_model::DSLinCalModel, s::DSState, a::DSPos; ϵ_prune=1e-4)
+    lin_model = cal_model.lin_model
+    T = cal_model.temperature
+
+    nx, ny = size.([lin_model.θ_Δx, lin_model.θ_Δy], 1) .÷ 2
+    states_Δx, states_Δy = (-nx:nx, -ny:ny) .|> collect
+
+    Δx = s.agent.x - s.quad.x
+    Δy = s.agent.y - s.quad.y
+    ξ = [Δx, Δy, a.x, a.y, 1]
+    softmax(x) = exp.(x / T) / sum(exp.(x / T))
+    probs_Δx, probs_Δy = (softmax(lin_model.θ_Δx * ξ),
+                          softmax(lin_model.θ_Δy * ξ))
 
     # we prune states with small probability
     return (prune_states(SparseCat(states_Δx, probs_Δx), ϵ_prune),
@@ -81,7 +104,32 @@ function predict(model::DSLinModel, s::DSState, a::DSPos, λ::Real; ϵ_prune=1e-
         end
         for distr in [lhs_distr, rhs_distr]
     ])
-    return lhs_pred_set, lhs_pred_set
+    return lhs_pred_set, rhs_pred_set
+end
+
+function predict(cal_model::DSLinCalModel, s::DSState, a::DSPos, λ::Real; ϵ_prune=1e-4)
+    lhs_distr, rhs_distr = predict(cal_model, s, a; ϵ_prune=ϵ_prune)
+
+    # Shuffle predictions, keep adding to prediction set until just over or just under
+    # desired probability (whichever has smaller "gap" to λ).
+    lhs_pred_set, rhs_pred_set = Tuple([begin
+            perm = shuffle(eachindex(distr.probs))
+            p_perm = distr.probs[perm]
+            p_cum = cumsum(p_perm)
+
+            idx = begin
+                idx = findfirst(>=(λ), p_cum)
+                gap_hi = p_cum[idx] - λ
+                gap_lo = λ - get(p_cum, idx-1, 0)
+                (gap_hi < gap_lo ? idx : idx-1)
+            end
+
+            val_perm = distr.vals[perm]
+            Set(val_perm[1:idx])
+        end
+        for distr in [lhs_distr, rhs_distr]
+    ])
+    return lhs_pred_set, rhs_pred_set
 end
 
 function predict(conf_model::DSConformalizedModel, s::DSState, a::DSPos, λ::Real; ϵ_prune=1e-4)
@@ -136,6 +184,30 @@ end
 
 # for our approximate model
 function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSLinModel, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
+    if isterminal(mdp, s) || s.quad == s.agent || s.quad == mdp.region_B
+        return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
+    else
+        Δx_dist, Δy_dist = predict(transition_model, s, a)
+        new_state_dist = let Δ_dist = Δx_dist ⊗ Δy_dist
+            # the agent stays in place with chance 1/4
+            new_states_with_movement = begin
+                new_states = [DSState(s.quad + a, s.quad + a + DSPos(Δ_quad_agent...))
+                              for Δ_quad_agent in Δ_dist.vals]
+                SparseCat(new_states, Δ_dist.probs)
+            end
+            new_states_no_movement = begin
+                new_states = [DSState(s.quad, s.quad + DSPos(Δ_quad_agent...))
+                              for Δ_quad_agent in Δ_dist.vals]
+                SparseCat(new_states, Δ_dist.probs)
+            end
+            (3//4 * new_states_with_movement ⊕ 1//4 * new_states_no_movement)
+        end
+        return new_state_dist
+    end
+end
+
+# for our calibrated model using temperature scaling
+function transition(mdp::DroneSurveillanceMDP, agent_strategy::DSAgentStrat, transition_model::DSLinCalModel, s::DSState, a::DSPos) :: Union{Deterministic, SparseCat}
     if isterminal(mdp, s) || s.quad == s.agent || s.quad == mdp.region_B
         return Deterministic(mdp.terminal_state) # the function is not type stable, returns either Deterministic or SparseCat
     else
