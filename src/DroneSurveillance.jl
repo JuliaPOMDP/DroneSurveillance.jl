@@ -89,6 +89,7 @@ include("states.jl")
 include("actions.jl")
 include("transition.jl")
 include("visualization.jl")
+include("models.jl")
 
 function __init__()
     # When loaded, set default show backend
