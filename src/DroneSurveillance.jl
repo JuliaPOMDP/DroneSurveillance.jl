@@ -64,7 +64,7 @@ struct PerfectCam end
     agent_policy::Symbol = :restricted
     camera::M = M() # PerfectCam
     terminal_state::DSState = DSState([-1, -1], [-2, -2])
-    discount_factor::Float64 = 0.95
+    discount_factor::Float64 = 0.99
     agent_strategy = DSAgentStrat(0.)
     transition_model = DSPerfectModel()
 end

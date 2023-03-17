@@ -46,14 +46,14 @@ function prune_states(sc::SparseCat, ϵ_prune)
 end
 
 # TODO maybe move this to the other project
-function predict(model::DSLinModel, s::DSState, a::DSPos; ϵ_prune=1e-4)
+function predict(model::DSLinModel, s::DSState, a::DSPos; ϵ_prune=1e-4, T=1.0)
     nx, ny = size.([model.θ_Δx, model.θ_Δy], 1) .÷ 2
     states_Δx, states_Δy = (-nx:nx, -ny:ny) .|> collect
 
     Δx = s.agent.x - s.quad.x
     Δy = s.agent.y - s.quad.y
     ξ = [Δx, Δy, a.x, a.y, 1]
-    softmax(x) = exp.(x) / sum(exp.(x))
+    softmax(x) = exp.(x./T) / sum(exp.(x./T))
     probs_Δx, probs_Δy = (softmax(model.θ_Δx * ξ),
                           softmax(model.θ_Δy * ξ))
 
