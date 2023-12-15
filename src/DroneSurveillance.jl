@@ -3,13 +3,13 @@ module DroneSurveillance
 using Random
 using LinearAlgebra
 using POMDPs
-using POMDPModelTools
+using POMDPTools
 using Parameters
 using StaticArrays
 using Compose
 using Colors
 
-export 
+export
     DSPos,
     DSState,
     QuadCam,
@@ -32,12 +32,12 @@ If the target is in a corner it is detected perfectly, if it is in the middle of
 it is assigned with equal probability to the neighboring regions. If the agent is below the UAV
 it is detected with probability 1.
 """
-struct QuadCam end 
+struct QuadCam end
 
 """
     PerfectCam
 
-When used as a camera model, the UAV can detect the ground agent with probability 1 when 
+When used as a camera model, the UAV can detect the ground agent with probability 1 when
 it is in its field of view.
 """
 struct PerfectCam end
@@ -45,7 +45,7 @@ struct PerfectCam end
 """
     DroneSurveillancePOMDP{M} <: POMDP{DSState, Int64, Int64}
 
-# Fields 
+# Fields
 - `size::Tuple{Int64, Int64} = (5,5)` size of the grid world
 - `region_A::DSPos = [1, 1]` first region to survey, initial state of the quad
 - `region_B::DSPos = [size[1], size[2]]` second region to survey
@@ -66,11 +66,11 @@ struct PerfectCam end
     discount_factor::Float64 = 0.95
 end
 
-POMDPs.isterminal(pomdp::DroneSurveillancePOMDP, s::DSState) = s == pomdp.terminal_state 
+POMDPs.isterminal(pomdp::DroneSurveillancePOMDP, s::DSState) = s == pomdp.terminal_state
 POMDPs.discount(pomdp::DroneSurveillancePOMDP) = pomdp.discount_factor
 
 function POMDPs.reward(pomdp::DroneSurveillancePOMDP, s::DSState, a::Int64)
-    if s.quad == s.agent 
+    if s.quad == s.agent
         return -1.0
     end
     if s.quad == pomdp.region_B

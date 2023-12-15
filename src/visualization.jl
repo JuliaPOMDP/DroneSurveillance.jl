@@ -1,11 +1,11 @@
-function POMDPModelTools.render(pomdp::DroneSurveillancePOMDP, step;
+function POMDPTools.render(pomdp::DroneSurveillancePOMDP, step;
                                 viz_rock_state=true)
     nx, ny = pomdp.size
     cells = []
     for x in 1:nx, y in 1:ny
         ctx = cell_ctx((x,y), (nx,ny))
         clr = "white"
-        if get(step, :s, nothing) != nothing 
+        if get(step, :s, nothing) != nothing
             if in_fov(pomdp, step[:s].quad, DSPos(x,y))
                 clr = ARGB(0.0, 0., 1.0, 0.9)
             end
@@ -21,8 +21,8 @@ function POMDPModelTools.render(pomdp::DroneSurveillancePOMDP, step;
 
     if get(step, :s, nothing) != nothing
         quad_ctx = cell_ctx(step[:s].quad, (nx,ny))
-        quad = render_quad(quad_ctx)   
-        agent_ctx = cell_ctx(step[:s].agent, (nx, ny))    
+        quad = render_quad(quad_ctx)
+        agent_ctx = cell_ctx(step[:s].agent, (nx, ny))
         agent = render_agent(agent_ctx)
     else
         quad = nothing
