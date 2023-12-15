@@ -110,5 +110,6 @@ end
     pomdp = DroneSurveillancePOMDP()
     rng = MersenneTwister(1)
     s0 = rand(rng, initialstate(pomdp))
-    render(pomdp, Dict(:step=>s0))
+    render(pomdp, Dict(:s=>s0))
+    render(pomdp)
 end
