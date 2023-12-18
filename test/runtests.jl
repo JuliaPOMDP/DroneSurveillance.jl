@@ -1,10 +1,7 @@
 using DroneSurveillance
 using Random
 using POMDPs
-using POMDPModelTools
-using POMDPPolicies
-using POMDPSimulators
-using POMDPTesting
+using POMDPTools
 using Test
 
 function test_state_indexing(pomdp::DroneSurveillancePOMDP, ss::Vector{DSState})
@@ -16,7 +13,7 @@ function test_state_indexing(pomdp::DroneSurveillancePOMDP, ss::Vector{DSState})
     return true
 end
 
-@testset "state space" begin 
+@testset "state space" begin
     pomdp = DroneSurveillancePOMDP()
     state_iterator =  states(pomdp)
     ss = ordered_states(pomdp)
@@ -29,7 +26,7 @@ end
     @test test_state_indexing(pomdp, ss)
 end
 
-@testset "action space" begin 
+@testset "action space" begin
     pomdp = DroneSurveillancePOMDP()
     acts = actions(pomdp)
     @test acts == ordered_actions(pomdp)
@@ -62,7 +59,7 @@ end
 end
 
 
-@testset "observation" begin 
+@testset "observation" begin
     rng = MersenneTwister(3)
     # quad cam
     pomdp = DroneSurveillancePOMDP(camera=QuadCam())
@@ -80,9 +77,9 @@ end
     s = DSState((2,2), (3,3))
     o = rand(rng, observation(pomdp, 6, s))
     @show observation(pomdp, 6, s)
-    @test o == 3 # north east    
+    @test o == 3 # north east
     @test has_consistent_observation_distributions(pomdp)
-    # perfect cam 
+    # perfect cam
     pomdp = DroneSurveillancePOMDP(camera=PerfectCam())
     obs = observations(pomdp)
     @test obs == ordered_observations(pomdp)
@@ -97,7 +94,7 @@ end
     @test o == 2 # east
     s = DSState((2,2), (3,3))
     o = rand(rng, observation(pomdp, 6, s))
-    @test o == 6 # north east    
+    @test o == 6 # north east
     @test has_consistent_observation_distributions(pomdp)
 end
 
@@ -113,5 +110,6 @@ end
     pomdp = DroneSurveillancePOMDP()
     rng = MersenneTwister(1)
     s0 = rand(rng, initialstate(pomdp))
-    render(pomdp, Dict(:step=>s0))
+    render(pomdp, Dict(:s=>s0))
+    render(pomdp)
 end

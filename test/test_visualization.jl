@@ -1,10 +1,8 @@
 using Random
 using DroneSurveillance
 using POMDPs
-using POMDPModelTools
-using POMDPSimulators
-using POMDPPolicies
-using POMDPGifs
+using POMDPTools
+using POMDPGifs # Not included in extras
 
 pomdp = DroneSurveillancePOMDP()
 
