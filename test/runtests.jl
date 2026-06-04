@@ -71,13 +71,16 @@ end
     @test o == 6 # agent should be out
     @inferred observation(pomdp, 6, s0)
     @inferred observation(pomdp, 1, s0)
+    
     s = DSState((2,2), (3,2))
-    o = rand(rng, observation(pomdp, 6, s))
-    @test o == 3 # east
+    od = observation(pomdp, 6, s)
+    @test pdf(od, 3) == 0.5 # east
+    @test pdf(od, 4) == 0.5 # east
+    
     s = DSState((2,2), (3,3))
-    o = rand(rng, observation(pomdp, 6, s))
-    @show observation(pomdp, 6, s)
-    @test o == 3 # north east
+    od = observation(pomdp, 6, s)
+    @test pdf(od, 3) == 1.0 # north east
+        
     @test has_consistent_observation_distributions(pomdp)
     # perfect cam
     pomdp = DroneSurveillancePOMDP(camera=PerfectCam())
