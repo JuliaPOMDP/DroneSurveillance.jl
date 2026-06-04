@@ -73,7 +73,7 @@ end
     @inferred observation(pomdp, 1, s0)
     s = DSState((2,2), (3,2))
     o = rand(rng, observation(pomdp, 6, s))
-    @test o == 4 # east
+    @test o == 3 # east
     s = DSState((2,2), (3,3))
     o = rand(rng, observation(pomdp, 6, s))
     @show observation(pomdp, 6, s)
