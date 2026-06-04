@@ -1,8 +1,7 @@
 # DroneSurveillance.jl
 
-[![Build status](https://github.com/JuliaPOMDP/DroneSurveillance.jl/workflows/CI/badge.svg)](https://github.com/JuliaPOMDP/DroneSurveillance.jl/actions)
-[![codecov](https://codecov.io/gh/juliapomdp/DroneSurveillance.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/juliapomdp/DroneSurveillance.jl)
-
+[![CI](https://github.com/Aero-Spec/DroneSurveillance.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/Aero-Spec/DroneSurveillance.jl/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/Aero-Spec/DroneSurveillance.jl/graph/badge.svg?token=A8RwMMHSgM)](https://codecov.io/gh/Aero-Spec/DroneSurveillance.jl)
 
 Implementation of a drone surveillance problem<sup>1</sup> with the [POMDPs.jl](https://github.com/JuliaPOMDP/POMDPs.jl).
 
