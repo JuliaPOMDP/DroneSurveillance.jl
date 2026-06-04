@@ -75,4 +75,3 @@ A drone must survey two region (in green) while avoiding to fly over a ground ag
 
 - `DSPos` represents a position in the grid as a static array of 2 integers
 - `DSState` represents the state of the environment, the field `quad` represents the position of the drone and the file `agent` the position of the ground agent
-  
